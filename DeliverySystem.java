@@ -585,14 +585,121 @@ public class DeliverySystem {
         }
     }
 
+    private static void testDeliveryPlanGeneration(DeliverySystem system, LocalDate date) {
+        System.out.println("\n=== Testing Delivery Plan Generation ===");
+        
+        // Test plan generation with varying load
+        int[] testLoads = {5, 15, 25}; // Light, Medium, Heavy loads
+        
+        for (int load : testLoads) {
+            System.out.printf("\nTesting with %d requests:%n", load);
+            
+            // Clear existing requests
+            system.deliveryRequests.get(date).clear();
+            
+            // Generate specific number of requests
+            generateRandomRequests(system, date, system.hubs, system.lockers);
+            while (system.deliveryRequests.get(date).size() > load) {
+                system.deliveryRequests.get(date).remove(system.deliveryRequests.get(date).size() - 1);
+            }
+            
+            // Generate and analyze plan
+            long startTime = System.currentTimeMillis();
+            system.generateOptimizedDeliveryPlan(date);
+            long endTime = System.currentTimeMillis();
+            
+            // Analyze results
+            List<Route> routes = system.deliveryPlans.get(date);
+            int totalDeliveries = routes.stream()
+                .mapToInt(r -> r.getStops().size())
+                .sum();
+            
+            System.out.println("Plan generation time: " + (endTime - startTime) + "ms");
+            System.out.println("Number of routes created: " + routes.size());
+            System.out.println("Total deliveries scheduled: " + totalDeliveries);
+            System.out.println("Average deliveries per route: " + 
+                String.format("%.2f", (double)totalDeliveries / routes.size()));
+        }
+    }
+    
+    private static void testPlanOptimization(DeliverySystem system, LocalDate date) {
+        System.out.println("\n=== Testing Plan Optimization ===");
+        
+        // Generate a mix of urgent and non-urgent requests
+        system.deliveryRequests.get(date).clear();
+        
+        // Add some urgent requests
+        for (int i = 0; i < 5; i++) {
+            POI hub = system.hubs.get(0);
+            POI locker = system.lockers.get(i % system.lockers.size());
+            DeliveryRequest urgentRequest = new DeliveryRequest(
+                "URG-" + i,
+                hub,
+                locker,
+                5, // Highest urgency
+                date,
+                LocalTime.of(9, 0), // Early morning
+                5.0,
+                "Medium"
+            );
+            system.addDeliveryRequest(urgentRequest);
+        }
+        
+        // Add some non-urgent requests
+        for (int i = 0; i < 10; i++) {
+            POI hub = system.hubs.get(system.hubs.size() - 1);
+            POI locker = system.lockers.get(i % system.lockers.size());
+            DeliveryRequest nonUrgentRequest = new DeliveryRequest(
+                "REG-" + i,
+                hub,
+                locker,
+                2, // Lower urgency
+                date,
+                LocalTime.of(14, 0), // Afternoon
+                5.0,
+                "Medium"
+            );
+            system.addDeliveryRequest(nonUrgentRequest);
+        }
+        
+        // Generate plan and analyze priorities
+        system.generateOptimizedDeliveryPlan(date);
+        List<Route> routes = system.deliveryPlans.get(date);
+        
+        System.out.println("\nAnalyzing delivery priorities:");
+        Map<Integer, List<LocalTime>> deliveryTimesByUrgency = new HashMap<>();
+        
+        for (Route route : routes) {
+            for (Route.DeliveryStop stop : route.getStops()) {
+                if (stop.request != null) {
+                    deliveryTimesByUrgency
+                        .computeIfAbsent(stop.request.getUrgencyLevel(), k -> new ArrayList<>())
+                        .add(stop.estimatedArrival);
+                }
+            }
+        }
+        
+        // Print analysis
+        deliveryTimesByUrgency.forEach((urgency, times) -> {
+            OptionalDouble avgTime = times.stream()
+                .mapToDouble(t -> t.getHour() * 60 + t.getMinute())
+                .average();
+            
+            System.out.printf("Urgency Level %d:%n", urgency);
+            System.out.printf("  Number of deliveries: %d%n", times.size());
+            System.out.printf("  Average delivery time: %02d:%02d%n", 
+                (int)avgTime.orElse(0) / 60,
+                (int)avgTime.orElse(0) % 60);
+        });
+    }
+
     public static void main(String[] args) {
         System.out.println("Starting Delivery System Tests...\n");
         DeliverySystem system = new DeliverySystem();
-
-        //keeps track of the time it takes to build the network, create requests and generate a plan
+        
         long startTime = System.currentTimeMillis();
         long networkBuildTime, requestCreationTime, planGenerationTime;
-
+        
         try {
             System.out.println("Setting up POIs...");
             
@@ -693,6 +800,9 @@ public class DeliverySystem {
             system.displayDeliveryPlan(today);
             system.displayTrafficImpact(today);
             system.showPerformanceMetrics(networkBuildTime, requestCreationTime, planGenerationTime);
+
+            //testDeliveryPlanGeneration(system, today); UNCOMMENT FOR TESTING!!!
+            //testPlanOptimization(system, today);
 
         } catch (Exception e) {
             System.err.println("Error during test execution: " + e.getMessage());
