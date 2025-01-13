@@ -10,6 +10,8 @@ public class ADTTest {
         testArrayList();
         testComparator();
         testPriorityQueue();
+        testDynamicRouteAdjustments();
+        testTrafficManager();
     }
 
     public static void testGraph() {
@@ -132,6 +134,100 @@ public class ADTTest {
             System.out.println("Processing Request " + request.getId() + 
                              " - Urgency Level: " + request.getUrgencyLevel() +
                              " - Preferred Time: " + request.getPreferredTime());
+        }
+    }
+
+    public static void testDynamicRouteAdjustments() {
+        System.out.println("\n=== Testing Dynamic Route Adjustments ===");
+        
+        // Setup test data
+        Driver driver = new Driver("D1", "Test Driver");
+        POI hub = new POI("Test Hub", "123 Test St", true);
+        Graph roadNetwork = new Graph();
+        Route route = new Route(driver, hub, roadNetwork);
+        
+        // Test initial route state
+        System.out.println("Initial route stops: " + route.getStops().size());
+        
+        // Test adding stops within capacity
+        POI destination1 = new POI("Dest1", "456 Test Ave", false);
+        POI destination2 = new POI("Dest2", "789 Test Blvd", false);
+        
+        // Add roads to network
+        roadNetwork.addRoad(hub.getName(), destination1.getName(), 10.0);
+        roadNetwork.addRoad(destination1.getName(), destination2.getName(), 5.0);
+        
+        // Create test requests
+        LocalDate today = LocalDate.now();
+        DeliveryRequest request1 = new DeliveryRequest(
+            "REQ1", hub, destination1, 3, today, 
+            LocalTime.of(10, 0), 5.0, "Medium"
+        );
+        DeliveryRequest request2 = new DeliveryRequest(
+            "REQ2", hub, destination2, 4, today,
+            LocalTime.of(11, 0), 3.0, "Small"
+        );
+        
+        // Test adding stops
+        System.out.println("\nTesting stop additions:");
+        route.setStartTime(LocalTime.of(9, 0));
+        
+        boolean added1 = route.canAddStop(destination1, request1.getPreferredTime());
+        if (added1) {
+            route.addStop(destination1, request1);
+            System.out.println("Successfully added first stop");
+        }
+        
+        boolean added2 = route.canAddStop(destination2, request2.getPreferredTime());
+        if (added2) {
+            route.addStop(destination2, request2);
+            System.out.println("Successfully added second stop");
+        }
+        
+        // Test route metrics after additions
+        System.out.println("\nRoute metrics after additions:");
+        System.out.println("Number of stops: " + route.getStops().size());
+        System.out.println("Total distance: " + route.getTotalDistance() + " km");
+        System.out.println("Estimated completion time: " + route.getEstimatedCompletionTime());
+    }
+
+    public static void testTrafficManager() {
+        System.out.println("\n=== Testing TrafficManager Integration ===");
+        
+        TrafficManager trafficManager = new TrafficManager();
+        
+        // Test traffic multipliers at different times
+        LocalTime[] testTimes = {
+            LocalTime.of(8, 0),   // Start of day
+            LocalTime.of(9, 0),   // Morning peak
+            LocalTime.of(12, 0),  // Mid-day
+            LocalTime.of(17, 0),  // Evening peak
+            LocalTime.of(20, 0)   // End of day
+        };
+        
+        System.out.println("\nTesting traffic multipliers at different times:");
+        for (LocalTime time : testTimes) {
+            double multiplier = trafficManager.getTrafficMultiplier(time);
+            boolean isPeak = trafficManager.isPeakHour(time);
+            System.out.printf("Time: %s - Multiplier: %.2f - Peak Hour: %s%n", 
+                time, multiplier, isPeak ? "Yes" : "No");
+        }
+        
+        // Test impact on route calculations
+        Graph roadNetwork = new Graph();
+        POI start = new POI("Start", "Start St", true);
+        POI end = new POI("End", "End St", false);
+        roadNetwork.addRoad(start.getName(), end.getName(), 10.0);
+        
+        System.out.println("\nTesting impact on route calculations:");
+        for (LocalTime time : testTimes) {
+            List<String> path = roadNetwork.findOptimalPath(
+                start.getName(), end.getName(), time);
+            Graph.Road road = roadNetwork.getRoad(start.getName(), end.getName());
+            double adjustedDistance = road.getCurrentDistance(time, trafficManager);
+            
+            System.out.printf("Time: %s - Adjusted Distance: %.2f km%n", 
+                time, adjustedDistance);
         }
     }
 }
