@@ -36,7 +36,6 @@ public class ADTTest {
 
     public static void testHashMap() {
         System.out.println("\n=== Testing HashMap ADT ===");
-        // Test Driver availability HashMap
         Map<LocalDate, Boolean> driverAvailability = new HashMap<>();
         LocalDate today = LocalDate.now();
         LocalDate tomorrow = today.plusDays(1);
@@ -48,7 +47,7 @@ public class ADTTest {
         System.out.println("Driver available today: " + driverAvailability.get(today));
         System.out.println("Driver available tomorrow: " + driverAvailability.get(tomorrow));
         
-        // Test delivery requests HashMap
+
         Map<LocalDate, List<DeliveryRequest>> deliveryRequests = new HashMap<>();
         POI hub = new POI("Test Hub", "123 Test St", true);
         POI destination = new POI("Test Dest", "456 Test Ave", false);
@@ -102,7 +101,6 @@ public class ADTTest {
             System.out.println("Request " + req.getId() + " - Urgency: " + req.getUrgencyLevel());
         }
         
-        // Sort by urgency level (highest to lowest)
         requests.sort((r1, r2) -> Integer.compare(r2.getUrgencyLevel(), r1.getUrgencyLevel()));
         
         System.out.println("\nAfter sorting by urgency (highest to lowest):");
@@ -113,7 +111,6 @@ public class ADTTest {
 
     public static void testPriorityQueue() {
         System.out.println("\n=== Testing PriorityQueue ADT ===");
-        // Create a priority queue of delivery requests sorted by urgency level
         PriorityQueue<DeliveryRequest> requestQueue = new PriorityQueue<>(
             (r1, r2) -> Integer.compare(r2.getUrgencyLevel(), r1.getUrgencyLevel())
         );
@@ -140,24 +137,24 @@ public class ADTTest {
     public static void testDynamicRouteAdjustments() {
         System.out.println("\n=== Testing Dynamic Route Adjustments ===");
         
-        // Setup test data
+
         Driver driver = new Driver("D1", "Test Driver");
         POI hub = new POI("Test Hub", "123 Test St", true);
         Graph roadNetwork = new Graph();
         Route route = new Route(driver, hub, roadNetwork);
         
-        // Test initial route state
+
         System.out.println("Initial route stops: " + route.getStops().size());
         
-        // Test adding stops within capacity
+
         POI destination1 = new POI("Dest1", "456 Test Ave", false);
         POI destination2 = new POI("Dest2", "789 Test Blvd", false);
         
-        // Add roads to network
+
         roadNetwork.addRoad(hub.getName(), destination1.getName(), 10.0);
         roadNetwork.addRoad(destination1.getName(), destination2.getName(), 5.0);
         
-        // Create test requests
+
         LocalDate today = LocalDate.now();
         DeliveryRequest request1 = new DeliveryRequest(
             "REQ1", hub, destination1, 3, today, 
@@ -168,7 +165,7 @@ public class ADTTest {
             LocalTime.of(11, 0), 3.0, "Small"
         );
         
-        // Test adding stops
+
         System.out.println("\nTesting stop additions:");
         route.setStartTime(LocalTime.of(9, 0));
         
@@ -184,7 +181,7 @@ public class ADTTest {
             System.out.println("Successfully added second stop");
         }
         
-        // Test route metrics after additions
+
         System.out.println("\nRoute metrics after additions:");
         System.out.println("Number of stops: " + route.getStops().size());
         System.out.println("Total distance: " + route.getTotalDistance() + " km");
@@ -196,7 +193,7 @@ public class ADTTest {
         
         TrafficManager trafficManager = new TrafficManager();
         
-        // Test traffic multipliers at different times
+
         LocalTime[] testTimes = {
             LocalTime.of(8, 0),   // Start of day
             LocalTime.of(9, 0),   // Morning peak
@@ -213,7 +210,7 @@ public class ADTTest {
                 time, multiplier, isPeak ? "Yes" : "No");
         }
         
-        // Test impact on route calculations
+
         Graph roadNetwork = new Graph();
         POI start = new POI("Start", "Start St", true);
         POI end = new POI("End", "End St", false);
